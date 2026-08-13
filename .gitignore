@@ -1,0 +1,5 @@
+# git ignores all the following files
+
+bin/
+.vs/
+obj/
