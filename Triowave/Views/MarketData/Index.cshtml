@@ -23,9 +23,15 @@
                     </div>
                 }
 
-                <form asp-controller="MarketData" asp-action="SyncStockData" method="post">
+                <form asp-controller="MarketData" asp-action="BackfillStockData" method="post">
                     <button type="submit" class="btn btn-primary">
                         Run sync
+                    </button>
+                </form>
+
+                <form asp-controller="MarketData" asp-action="PullDailyStockQuote" method="post">
+                    <button type="submit" class="btn btn-primary">
+                        Pull Daily Quotes
                     </button>
                 </form>
             </div>

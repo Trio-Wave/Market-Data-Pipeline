@@ -1,23 +1,23 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Triowave.Interfaces;
 using Triowave.Models.CustomModels;
-using Triowave.Services;
 
 namespace Triowave.Controllers
 {
     public class MarketDataController : Controller
     {
-        private readonly GeneralDWService _generalDwService;
-        private readonly WebApiService _webApiService;
+        private readonly IGeneralDWService _generalDwService;
+        private readonly IMarketDataService _marketDataService;
         private readonly ILogger<MarketDataController> _logger;
 
         public MarketDataController(
-            GeneralDWService generalDwService,
-            WebApiService webApiService,
+            IGeneralDWService generalDwService,
+            IMarketDataService marketDataService,
             ILogger<MarketDataController> logger)
         {
             _generalDwService = generalDwService;
-            _webApiService = webApiService;
+            _marketDataService = marketDataService;
             _logger = logger;
         }
 
@@ -25,6 +25,8 @@ namespace Triowave.Controllers
         {
             return View();
         }
+
+        #region CSV Handling
 
         public async Task StoreSymbols()
         {
@@ -62,40 +64,31 @@ namespace Triowave.Controllers
             }
         }
 
+        #endregion
+
+        #region AlphaVantage API Sync
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SyncStockData()
+        public async Task<IActionResult> BackfillStockData()
         {
-            var symbols = await _generalDwService.GetUnfilledSymbols(5);
-            var storedCount = 0;
-            var failedCount = 0;
+            var result = await _marketDataService.BackfillStockData();
 
-            foreach (var symbol in symbols)
-            {
-                try
-                {
-                    var stockPriceData = await _webApiService.GetDailyStockTimeSeries(symbol.Symbol1);
-
-                    if (stockPriceData?.TimeSeries is null)
-                    {
-                        failedCount++;
-                        _logger.LogWarning("No time series data returned for {Symbol}.", symbol.Symbol1);
-                        continue;
-                    }
-
-                    await _generalDwService.StoreStockPrices(symbol.Symbol1, stockPriceData);
-                    storedCount++;
-                }
-                catch (Exception ex)
-                {
-                    failedCount++;
-                    _logger.LogError(ex, "Failed to sync stock data for {Symbol}.", symbol.Symbol1);
-                }
-            }
-
-            TempData["Message"] = $"Synced {storedCount} of {symbols.Count} symbols. Failed: {failedCount}.";
-            TempData["IsSuccess"] = failedCount == 0 && storedCount > 0;
+            TempData["Message"] = $"Synced {result.StoredCount} of {result.TotalCount} symbols. Failed: {result.FailedCount}.";
+            TempData["IsSuccess"] = result.FailedCount == 0 && result.StoredCount > 0;
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PullDailyStockQuote()
+        {
+            var result = await _marketDataService.PullDailyStockQuote();
+
+            TempData["Message"] = $"Synced {result.StoredCount} of {result.TotalCount} symbols. Failed: {result.FailedCount}.";
+            TempData["IsSuccess"] = result.FailedCount == 0 && result.StoredCount > 0;
+            return RedirectToAction(nameof(Index));
+        }
+
+        #endregion
     }
 }

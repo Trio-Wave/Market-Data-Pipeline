@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Triowave.Interfaces;
 using Triowave.Models;
 using Triowave.Models.CustomModels;
 
 namespace Triowave.Services
 {
-    public class GeneralDWService
+    public class GeneralDWService : IGeneralDWService
     {
 
         private readonly GeneralDWContext _context;
@@ -21,7 +22,7 @@ namespace Triowave.Services
         /// </summary>
         /// <param name="numSymbols"></param>
         /// <returns></returns>
-        public async Task<List<Symbol>> GetUnfilledSymbols(int numSymbols)
+        public async Task<List<string>> GetUnfilledSymbols(int numSymbols)
         {
             var filledSymbols = _context.StockPrices
                 .Select(s => s.Symbol)
@@ -32,7 +33,46 @@ namespace Triowave.Services
                 .Where(s => s.Enabled == true && !filledSymbols.Contains(s.Symbol1))
                 .OrderBy(s => s.Id)
                 .Take(numSymbols)
+                .Select(s => s.Symbol1)
                 .ToListAsync();
+        }
+
+        public async Task<List<string>> GetEnabledSymbols()
+        {
+            return await _context.Symbols
+                .Where(s => s.Enabled == true)
+                .OrderBy(s => s.Id)
+                .Select(s => s.Symbol1)
+                .ToListAsync();
+        }
+
+        public async Task StoreGlobalQuote(string symbol, GlobalQuote globalQuote)
+        {
+
+            try
+            {
+                var existingStockPrice = await _context.StockPrices
+                    .Where(x => x.Symbol == symbol & x.Date == globalQuote.Date)
+                    .FirstOrDefaultAsync();
+
+                var dbGlobalQuote = existingStockPrice ?? new StockPrice { Symbol = symbol };
+
+                dbGlobalQuote.Date = globalQuote.Date;
+                dbGlobalQuote.Open = globalQuote.Open;
+                dbGlobalQuote.High = globalQuote.High;
+                dbGlobalQuote.Low = globalQuote.Low;
+                dbGlobalQuote.Close = globalQuote.Price;
+                dbGlobalQuote.Volume = ToVolume(globalQuote.Volume);
+
+                if (existingStockPrice is null) _context.Add(dbGlobalQuote);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error storing stock prices for {Symbol}.", symbol);
+                throw;
+            }
         }
 
         public async Task StoreStockPrices(string symbol, StockPriceData stockPriceData)
