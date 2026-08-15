@@ -1,4 +1,4 @@
-tock Market Data Application
+# Stock Market Data Application
 
 ## Technology Stack
 
@@ -48,37 +48,36 @@ dotnet ef dbcontext scaffold "Server=LivTop\TRIOWAVEDEV;Database=GeneralDW;Trust
 * [ ] **Add graph to UI**
 
   * Add functionality similar to the existing quote data table.
-    * Allow the user to select between symbols.
+  * Allow the user to select between symbols.
 
-    * [ ] **Tidy up `GeneralDW` service functions**
+* [ ] **Tidy up `GeneralDW` service functions**
 
-      * Consolidate similar functions.
-        * Reorganize functions where appropriate.
+  * Consolidate similar functions.
+  * Reorganize functions where appropriate.
 
-        * [ ] **Tidy up `MarketDataController`**
+* [ ] **Tidy up `MarketDataController`**
 
-          * Remove unnecessary functions, particularly CSV-related functionality.
-            * Consider redesigning `Index()`.
+  * Remove unnecessary functions, particularly CSV-related functionality.
+  * Consider redesigning `Index()`.
 
-            * [ ] **Set up a fallback model for the Alpha Vantage API**
+* [ ] **Set up a fallback model for the Alpha Vantage API**
 
-              * Implement a fallback when the daily API rate limit has been reached.
+  * Implement a fallback when the daily API rate limit has been reached.
 
-              * [ ] **Improve logging**
+* [ ] **Improve logging**
 
-                * Add more detailed logging for each step of the daily sync.
-                  * Remove redundant logs.
+  * Add more detailed logging for each step of the daily sync.
+  * Remove redundant logs.
 
-                  * [ ] **Rework the Backfill Sync UI**
+* [ ] **Rework the Backfill Sync UI**
 
-                    * Improve how the Backfill Sync button is displayed.
-                      * Consider reworking the underlying functionality.
+  * Improve how the Backfill Sync button is displayed.
+  * Consider reworking the underlying functionality.
 
-                      * [ ] **Add SQL table for sync runs**
+* [ ] **Add SQL table for sync runs**
 
-                        * Track individual sync executions and their status.
+  * Track individual sync executions and their status.
 
-                        * [ ] **Add SQL table for audit logging**
+* [ ] **Add SQL table for audit logging**
 
-                          * Track relevant application and data changes.
-
+  * Track relevant application and data changes.
