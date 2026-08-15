@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using Triowave.Configuration;
 using Triowave.Interfaces;
 using Triowave.Models.CustomModels;
