@@ -1,0 +1,23 @@
+﻿@model Triowave.Models.ViewModels.MarketDataViewModel
+
+<div class="card-body p-4">
+
+    <partial name="_SymbolSelector" model="Model" />
+
+    <!-- Current Selection -->
+    <div class="mb-3">
+        <span class="badge text-bg-secondary">
+            @Model.SelectedSymbol
+        </span>
+    </div>
+
+    <partial name="_MarketDataTable" model="Model.GlobalQuotes" />
+
+    <!-- Results Count -->
+    <p class="mt-3 mb-0">
+        Total:
+        <strong>@Model.GlobalQuotes.Count()</strong>
+        results found
+    </p>
+
+</div>

@@ -1,0 +1,36 @@
+﻿@model Triowave.Models.ViewModels.MarketDataViewModel
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+
+    <h2 class="h5 mb-0">
+        Market Data
+    </h2>
+
+    <form asp-controller="MarketData"
+          asp-action="Index"
+          method="get"
+          class="d-flex align-items-center gap-2">
+
+        <label for="symbol" class="form-label mb-0">
+            Symbol
+        </label>
+
+        <select id="symbol"
+                name="symbol"
+                class="form-select"
+                style="width: 160px;"
+                onchange="this.form.submit()">
+
+            @foreach (var symbol in Model.Symbols)
+            {
+                <option value="@symbol"
+                        selected="@(symbol == Model.SelectedSymbol)">
+                    @symbol
+                </option>
+            }
+
+        </select>
+
+    </form>
+
+</div>

@@ -27,11 +27,10 @@ namespace Triowave.Services
         #region Helper Methods
 
         private async Task<DataSyncResult> StoreRequestedData<T>(
-            List<string> symbols,
-            Func<string, int, Task<T>> getStockFromApi,
-            Func<string, T, Task> storeStockData)
+    List<string> symbols,
+    Func<string, int, Task<T>> getStockFromApi,
+    Func<string, T, Task> storeStockData)
         {
-
             var alphaVantage = _appSettings.GetSection<AlphaVantageOptions>("AlphaVantage");
             var totalKeys = alphaVantage.NumberOfApiKeys;
 
@@ -39,36 +38,42 @@ namespace Triowave.Services
             var storedCount = 0;
             var failedCount = 0;
 
-            foreach (var symbol in symbols)
+            for (var i = 0; i < symbols.Count; i++)
             {
-                try
+                var symbol = symbols[i];
+
+                if (currentKey > totalKeys)
                 {
-                    var stockPriceData = await getStockFromApi(symbol, currentKey);
+                    _logger.LogError(
+                        "All {TotalKeys} API keys exhausted; stopping sync with {Remaining} symbols unprocessed starting at {Symbol}.",
+                        totalKeys, symbols.Count - i, symbol);
 
-                    if (stockPriceData is null)
-                    {
-                        failedCount++;
-                        _logger.LogWarning("No data returned for {Symbol}.", symbol);
-
-                        currentKey++;
-                        if (currentKey > totalKeys) break;
-                        continue;
-                    }
-
-                    await storeStockData(symbol, stockPriceData);
-                    storedCount++;
-
-                    await Task.Delay(1000); // Don't overload api
+                    failedCount += symbols.Count - i;
+                    break;
                 }
-                catch (Exception ex)
+
+                var (stockData, nextKey) = await FetchWithKeyRotation(symbol, getStockFromApi, currentKey, totalKeys);
+                currentKey = nextKey;
+
+                if (stockData is null)
                 {
                     failedCount++;
-                    _logger.LogError(ex, "Failed to sync stock data for {Symbol}.", symbol);
-
-                    currentKey++;
-                    if (currentKey > totalKeys) break;
+                }
+                else
+                {
+                    try
+                    {
+                        await storeStockData(symbol, stockData);
+                        storedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failedCount++;
+                        _logger.LogError(ex, "Failed to store stock data for {Symbol}.", symbol);
+                    }
                 }
 
+                await Task.Delay(1000); // Don't overload api
             }
 
             return new DataSyncResult
@@ -77,6 +82,32 @@ namespace Triowave.Services
                 StoredCount = storedCount,
                 FailedCount = failedCount
             };
+        }
+
+        private async Task<(T? Data, int NextKey)> FetchWithKeyRotation<T>(
+            string symbol,
+            Func<string, int, Task<T>> getStockFromApi,
+            int currentKey,
+            int totalKeys)
+        {
+            while (currentKey <= totalKeys)
+            {
+                try
+                {
+                    var data = await getStockFromApi(symbol, currentKey);
+                    if (data is not null) return (data, currentKey);
+
+                    _logger.LogWarning("No data returned for {Symbol} using key {Key}.", symbol, currentKey);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "API call failed for {Symbol} using key {Key}.", symbol, currentKey);
+                }
+
+                currentKey++;
+            }
+
+            return (default, currentKey);
         }
 
         #endregion
@@ -98,7 +129,7 @@ namespace Triowave.Services
         [ValidateAntiForgeryToken]
         public async Task<DataSyncResult> PullDailyStockQuote()
         {
-            var symbols = await _generalDwService.GetEnabledSymbols();
+            var symbols = await _generalDwService.GetDailySyncSymbols();
 
             return await StoreRequestedData(
                 symbols,

@@ -10,6 +10,8 @@ namespace Triowave.Configuration
 
         public string ApiKey3 { get; set; } = string.Empty;
 
+        public string ApiKey4 { get; set; } = string.Empty;
+
         public int NumberOfApiKeys { get; set; } = 1;
     }
 }

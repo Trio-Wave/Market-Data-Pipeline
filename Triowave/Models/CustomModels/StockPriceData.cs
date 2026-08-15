@@ -45,6 +45,6 @@ namespace Triowave.Models.CustomModels
         public decimal Close { get; set; }
 
         [JsonPropertyName("5. volume")]
-        public long Volume { get; set; }
+        public int Volume { get; set; }
     }
 }

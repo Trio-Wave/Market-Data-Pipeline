@@ -1,0 +1,61 @@
+﻿@{
+    var message = TempData["Message"] as string;
+    var isSuccess = TempData["IsSuccess"] as bool? == true;
+}
+
+<div class="card-body p-4">
+
+    <div class="d-flex justify-content-between align-items-start mb-2">
+
+        <h1 class="h3 mb-0">
+            Daily price sync
+        </h1>
+
+        <span class="badge text-bg-light border">
+            v@(AppInfo.Version)
+        </span>
+
+    </div>
+
+    <p class="text-muted mb-4">
+        Pulls daily time series from Alpha Vantage for symbols
+        that do not have prices yet, then stores them in GeneralDW.
+    </p>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert @(isSuccess ? "alert-success" : "alert-warning")"
+             role="alert">
+            @message
+        </div>
+    }
+
+    <div class="d-flex gap-2">
+
+        <form asp-controller="MarketData"
+              asp-action="BackfillStockData"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <button type="submit" class="btn btn-primary" disabled>
+                Run sync
+            </button>
+
+        </form>
+
+        <form asp-controller="MarketData"
+              asp-action="PullDailyStockQuote"
+              method="post">
+
+            @Html.AntiForgeryToken()
+
+            <button type="submit" class="btn btn-primary">
+                Pull Daily Quotes
+            </button>
+
+        </form>
+
+    </div>
+
+</div>

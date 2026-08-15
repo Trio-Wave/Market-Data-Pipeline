@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Triowave.Interfaces;
 using Triowave.Models.CustomModels;
+using Triowave.Models.ViewModels;
 
 namespace Triowave.Controllers
 {
@@ -21,9 +22,25 @@ namespace Triowave.Controllers
             _logger = logger;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index(string? symbol)
         {
-            return View();
+            var symbols = await _generalDwService.GetEnabledSymbols();
+
+            var selectedSymbol = string.IsNullOrWhiteSpace(symbol)
+                ? symbols.FirstOrDefault() ?? "AAPL"
+                : symbol.ToUpper();
+
+            var globalQuotes =
+                _generalDwService.GetGlobalQuotes(selectedSymbol);
+
+            var model = new MarketDataViewModel
+            {
+                GlobalQuotes = globalQuotes,
+                Symbols = symbols,
+                SelectedSymbol = selectedSymbol
+            };
+
+            return View(model);
         }
 
         #region CSV Handling

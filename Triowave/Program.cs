@@ -73,6 +73,4 @@ app.MapControllerRoute(
     pattern: "{controller=MarketData}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-// app.UseHttpsRedirection();
-
 app.Run();

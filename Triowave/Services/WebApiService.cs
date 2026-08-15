@@ -69,6 +69,7 @@ namespace Triowave.Services
                     1 => alphaVantage.ApiKey1,
                     2 => alphaVantage.ApiKey2,
                     3 => alphaVantage.ApiKey3,
+                    4 => alphaVantage.ApiKey4,
                     _ => alphaVantage.ApiKey1
                 }
             };

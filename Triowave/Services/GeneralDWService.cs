@@ -18,7 +18,7 @@ namespace Triowave.Services
         }
 
         /// <summary>
-        /// Get symbols that have not been filled yet
+        /// Get enabled symbols that have not been back-filled yet
         /// </summary>
         /// <param name="numSymbols"></param>
         /// <returns></returns>
@@ -46,13 +46,49 @@ namespace Triowave.Services
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Checks which symbols have been updated with recent data 
+        /// </summary>
+        /// <returns>list of enabled symbols that have not been filled yet</returns>
+        public async Task<List<string>> GetDailySyncSymbols()
+        {
+            var enabledSymbols = await GetEnabledSymbols();
+
+            var checkDate = DateTime.Now.Hour > 17 ? DateTime.Now.Date : DateTime.Now.AddDays(-1).Date;
+
+            var filledSymbols = await _context.StockPrices
+                .Where(s => s.Date.Date == checkDate)
+                .Select(s => s.Symbol)
+                .Distinct()
+                .ToListAsync();
+
+            return enabledSymbols
+                .Where(symbol => !filledSymbols.Contains(symbol))
+                .ToList();
+        }
+
+        public IQueryable<GlobalQuote> GetGlobalQuotes(string symbol)
+        {
+            return _context.StockPrices
+                .Where(s => s.Symbol == symbol)
+                .Select(s => new GlobalQuote
+                {
+                    Date = s.Date,
+                    Open = s.Open,
+                    High = s.High,
+                    Low = s.Low,
+                    Price = s.Close,
+                    Volume = s.Volume
+                }).AsQueryable().OrderByDescending(x => x.Date);
+        }
+
         public async Task StoreGlobalQuote(string symbol, GlobalQuote globalQuote)
         {
 
             try
             {
                 var existingStockPrice = await _context.StockPrices
-                    .Where(x => x.Symbol == symbol & x.Date == globalQuote.Date)
+                    .Where(x => x.Symbol == symbol && x.Date == globalQuote.Date)
                     .FirstOrDefaultAsync();
 
                 var dbGlobalQuote = existingStockPrice ?? new StockPrice { Symbol = symbol };
@@ -62,7 +98,7 @@ namespace Triowave.Services
                 dbGlobalQuote.High = globalQuote.High;
                 dbGlobalQuote.Low = globalQuote.Low;
                 dbGlobalQuote.Close = globalQuote.Price;
-                dbGlobalQuote.Volume = ToVolume(globalQuote.Volume);
+                dbGlobalQuote.Volume = globalQuote.Volume;
 
                 if (existingStockPrice is null) _context.Add(dbGlobalQuote);
 
@@ -101,7 +137,7 @@ namespace Triowave.Services
                         existingPrice.High = dailyPrice.High;
                         existingPrice.Low = dailyPrice.Low;
                         existingPrice.Close = dailyPrice.Close;
-                        existingPrice.Volume = ToVolume(dailyPrice.Volume);
+                        existingPrice.Volume = dailyPrice.Volume;
                     }
                     else
                     {
@@ -113,7 +149,7 @@ namespace Triowave.Services
                             High = dailyPrice.High,
                             Low = dailyPrice.Low,
                             Close = dailyPrice.Close,
-                            Volume = ToVolume(dailyPrice.Volume)
+                            Volume = dailyPrice.Volume
                         });
                     }
                 }
@@ -126,16 +162,6 @@ namespace Triowave.Services
                 _logger.LogError(ex, "Error storing stock prices for {Symbol}.", symbol);
                 throw;
             }
-        }
-
-        private static int? ToVolume(long volume)
-        {
-            if (volume > int.MaxValue)
-            {
-                return int.MaxValue;
-            }
-
-            return (int)volume;
         }
 
         public async Task StoreSymbols(SymbolData symbol)
